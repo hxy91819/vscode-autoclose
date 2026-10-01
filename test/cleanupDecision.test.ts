@@ -43,10 +43,22 @@ test('focused and active states independently protect the window', () => {
   }
 });
 
-test('does not clean an empty window', () => {
+test('cleans an idle empty window using the same rules as a workspace', () => {
   const result = decideCleanup(snapshot({ hasWorkspace: false }));
-  assert.equal(result.outcome, 'keep');
-  assert.ok(result.outcome !== 'keep' || result.reason === 'empty-window');
+  assert.equal(result.outcome, 'close');
+});
+
+test('protects unsaved editors and focused states in empty windows', () => {
+  for (const overrides of [
+    { dirtyEditors: 1 },
+    { focused: true },
+    { active: true },
+  ]) {
+    const result = decideCleanup(
+      snapshot({ hasWorkspace: false, ...overrides }),
+    );
+    assert.equal(result.outcome, 'keep');
+  }
 });
 
 test('notify mode reports the candidate without requesting close', () => {
@@ -54,4 +66,15 @@ test('notify mode reports the candidate without requesting close', () => {
     outcome: 'notify',
     idleForMs: 73 * HOUR,
   });
+});
+
+test('allows unsaved tabs into the normal close flow when protection is off', () => {
+  for (const hasWorkspace of [true, false]) {
+    assert.equal(
+      decideCleanup(
+        snapshot({ hasWorkspace, dirtyEditors: 1, protectDirtyEditors: false }),
+      ).outcome,
+      'close',
+    );
+  }
 });

@@ -2,7 +2,7 @@
   "name": "stale-window-cleaner",
   "displayName": "Stale Window Cleaner",
   "description": "Safely detects stale VS Code workspace windows and optionally closes them.",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "local-poc",
   "license": "MIT",
   "engines": {
@@ -28,6 +28,10 @@
       {
         "command": "staleWindowCleaner.showStatus",
         "title": "Stale Window Cleaner: Show Status"
+      },
+      {
+        "command": "staleWindowCleaner.showAllWindows",
+        "title": "Stale Window Cleaner: Show All Windows"
       },
       {
         "command": "staleWindowCleaner.resetIdleTimer",
@@ -73,8 +77,8 @@
         },
         "staleWindowCleaner.protectDirtyEditors": {
           "type": "boolean",
-          "default": true,
-          "description": "Never act while any tab has unsaved changes."
+          "default": false,
+          "description": "Keep windows with unsaved tabs open. When false, use VS Code's normal close flow, which may back up editors through Hot Exit or prompt to save."
         }
       }
     }
@@ -88,7 +92,8 @@
     "test:e2e": "npm run compile && node test/runE2E.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "package": "npx --yes @vscode/vsce@4.0.0 package"
+    "package": "npx --yes @vscode/vsce@4.0.0 package",
+    "test:installed": "npm run package && xvfb-run -a node test/installedSmoke.mjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

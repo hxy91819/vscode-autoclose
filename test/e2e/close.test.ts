@@ -21,6 +21,18 @@ suite('Stale Window Cleaner close smoke', () => {
       commands.includes(CLOSE_COMMAND),
       'the close smoke command should exist only in ExtensionMode.Test',
     );
+    await vscode.workspace
+      .getConfiguration('files')
+      .update(
+        'hotExit',
+        'onExitAndWindowClose',
+        vscode.ConfigurationTarget.Global,
+      );
+    const document = await vscode.workspace.openTextDocument({
+      content: 'autoclose hot exit recovery test',
+    });
+    await vscode.window.showTextDocument(document);
+    assert.equal(document.isDirty, true);
     // Model the reconnect dialog: closing must not require dismissing it first.
     void vscode.window.showWarningMessage(
       'Cannot reconnect. Please reload the window.',

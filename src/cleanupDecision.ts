@@ -2,7 +2,6 @@ import type { CleanupAction } from './config';
 
 export type KeepReason =
   | 'disabled'
-  | 'empty-window'
   | 'focused'
   | 'active'
   | 'not-idle'
@@ -32,9 +31,6 @@ export function decideCleanup(snapshot: CleanupSnapshot): CleanupDecision {
 
   if (!snapshot.enabled) {
     return { outcome: 'keep', reason: 'disabled', idleForMs };
-  }
-  if (!snapshot.hasWorkspace) {
-    return { outcome: 'keep', reason: 'empty-window', idleForMs };
   }
   if (snapshot.focused) {
     return { outcome: 'keep', reason: 'focused', idleForMs };

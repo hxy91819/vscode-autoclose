@@ -7,6 +7,8 @@ import type { ActivityTracker } from '../../src/activityTracker';
 import type { Logger } from '../../src/logger';
 import type { WindowCloser } from '../../src/windowCloser';
 import { StatusIndicator } from '../../src/statusIndicator';
+import { windowEstimate } from '../../src/windowOverview';
+import type { WindowReport } from '../../src/windowRegistry';
 
 const EXTENSION_ID = 'local-poc.stale-window-cleaner';
 const RUN_CHECK_COMMAND = 'staleWindowCleaner.runCleanupCheck';
@@ -42,6 +44,7 @@ suite('Stale Window Cleaner end-to-end', () => {
     );
     assert.equal(extension.isActive, true);
     assert.ok(commands.includes('staleWindowCleaner.showStatus'));
+    assert.ok(commands.includes('staleWindowCleaner.showAllWindows'));
     assert.ok(commands.includes('staleWindowCleaner.resetIdleTimer'));
     assert.ok(commands.includes(RUN_CHECK_COMMAND));
     assert.ok(commands.includes(QUICK_TEST_COMMAND));
@@ -59,6 +62,78 @@ suite('Stale Window Cleaner end-to-end', () => {
     );
 
     assert.equal(decision.outcome, 'close');
+  });
+
+  test('opens all-window overview through its public command', async () => {
+    const reports = await vscode.commands.executeCommand<WindowReport[]>(
+      'staleWindowCleaner.showAllWindows',
+    );
+    assert.ok(reports && reports.length >= 1);
+    assert.ok(reports.some((report) => report.snapshot.hasWorkspace));
+    assert.ok(reports.every((report) => report.nextCheckAt > 0));
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  });
+
+  test('estimates cleanup at the next scheduled check after the idle threshold', () => {
+    const hour = 3_600_000;
+    const now = Date.now();
+    const scheduler = schedulerWithCloser({
+      canClose: () => true,
+      close: async () => true,
+    });
+    const report: WindowReport = {
+      id: 'test',
+      label: 'workspace',
+      updatedAt: now,
+      nextCheckAt: now + hour / 2,
+      checkIntervalMs: hour / 2,
+      closeSupported: true,
+      snapshot: {
+        ...scheduler.snapshot(),
+        focused: false,
+        active: false,
+        lastActivityAt: now - 20 * hour,
+        idleMs: 24 * hour,
+        protectDirtyEditors: true,
+      },
+    };
+    try {
+      assert.ok(
+        windowEstimate(report, now).includes(
+          new Date(now + 4 * hour).toLocaleString(),
+        ),
+      );
+      assert.match(
+        windowEstimate(
+          { ...report, snapshot: { ...report.snapshot, dirtyEditors: 1 } },
+          now,
+        ),
+        /未保存/,
+      );
+      assert.match(
+        windowEstimate(
+          { ...report, snapshot: { ...report.snapshot, focused: true } },
+          now,
+        ),
+        /焦点/,
+      );
+      assert.match(
+        windowEstimate(
+          { ...report, snapshot: { ...report.snapshot, enabled: false } },
+          now,
+        ),
+        /禁用/,
+      );
+      assert.match(
+        windowEstimate(
+          { ...report, snapshot: { ...report.snapshot, action: 'notify' } },
+          now,
+        ),
+        /预计通知/,
+      );
+    } finally {
+      scheduler.dispose();
+    }
   });
 
   test('runs the quick-test path without waiting for active to decay', async () => {
@@ -182,6 +257,11 @@ suite('Stale Window Cleaner end-to-end', () => {
   });
 
   test('protects a real dirty editor tab', async () => {
+    const config = vscode.workspace.getConfiguration('staleWindowCleaner');
+    const original = config.inspect<boolean>(
+      'protectDirtyEditors',
+    )?.workspaceValue;
+    assert.equal(config.get('protectDirtyEditors'), false);
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(workspaceFolder, 'the test workspace should be open');
     const document = await vscode.workspace.openTextDocument(
@@ -194,18 +274,38 @@ suite('Stale Window Cleaner end-to-end', () => {
     });
     assert.equal(document.isDirty, true);
 
-    const decision = await vscode.commands.executeCommand<CleanupDecision>(
-      RUN_CHECK_COMMAND,
-      simulatedIdleCheck,
+    const aggressiveDecision =
+      await vscode.commands.executeCommand<CleanupDecision>(
+        RUN_CHECK_COMMAND,
+        simulatedIdleCheck,
+      );
+    assert.equal(aggressiveDecision.outcome, 'close');
+    await config.update(
+      'protectDirtyEditors',
+      true,
+      vscode.ConfigurationTarget.Workspace,
     );
+    try {
+      const decision = await vscode.commands.executeCommand<CleanupDecision>(
+        RUN_CHECK_COMMAND,
+        simulatedIdleCheck,
+      );
 
-    assert.equal(decision.outcome, 'keep');
-    assert.ok(
-      decision.outcome !== 'keep' || decision.reason === 'dirty-editor',
-    );
-
-    await vscode.commands.executeCommand('workbench.action.files.revert');
-    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+      assert.equal(decision.outcome, 'keep');
+      assert.ok(
+        decision.outcome !== 'keep' || decision.reason === 'dirty-editor',
+      );
+    } finally {
+      await vscode.commands.executeCommand('workbench.action.files.revert');
+      await vscode.commands.executeCommand(
+        'workbench.action.closeActiveEditor',
+      );
+      await config.update(
+        'protectDirtyEditors',
+        original,
+        vscode.ConfigurationTarget.Workspace,
+      );
+    }
   });
 });
 

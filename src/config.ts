@@ -28,6 +28,6 @@ export function readConfig(): CleanerConfig {
     action: configuredAction === 'close' ? 'close' : 'notify',
     checkIntervalMs: checkIntervalMinutes * 60 * 1000,
     checkIntervalMinutes,
-    protectDirtyEditors: config.get<boolean>('protectDirtyEditors', true),
+    protectDirtyEditors: config.get<boolean>('protectDirtyEditors', false),
   };
 }

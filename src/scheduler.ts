@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import type { ActivityTracker } from './activityTracker';
 import type { Clock } from './clock';
-import { decideCleanup, type CleanupDecision } from './cleanupDecision';
+import {
+  decideCleanup,
+  type CleanupDecision,
+  type CleanupSnapshot,
+} from './cleanupDecision';
 import { readConfig, type CleanupAction } from './config';
 import type { Logger } from './logger';
 import type { WindowCloser } from './windowCloser';
@@ -17,7 +21,6 @@ export interface SweepOptions {
 
 const REASON_LABELS: Record<string, string> = {
   disabled: '插件已禁用',
-  'empty-window': 'Empty Window 不在 POC 清理范围内',
   focused: '窗口当前有焦点',
   active: '窗口近期仍有用户活动',
   'not-idle': '尚未达到闲置阈值',
@@ -51,6 +54,10 @@ export class CleanupScheduler {
   }
 
   public inspect(options: SweepOptions = {}): CleanupDecision {
+    return decideCleanup(this.snapshot(options));
+  }
+
+  public snapshot(options: SweepOptions = {}): CleanupSnapshot {
     const config = readConfig();
     const windowState = vscode.window.state;
     const now = this.clock.now();
@@ -59,7 +66,7 @@ export class CleanupScheduler {
       0,
     );
 
-    return decideCleanup({
+    return {
       now,
       lastActivityAt: options.forceIdle
         ? now - config.idleMs
@@ -72,7 +79,7 @@ export class CleanupScheduler {
       dirtyEditors,
       protectDirtyEditors: config.protectDirtyEditors,
       action: options.actionOverride ?? config.action,
-    });
+    };
   }
 
   public async sweep(
@@ -111,9 +118,6 @@ export class CleanupScheduler {
     if (decision.outcome === 'keep' && decision.reason === 'disabled') {
       return '$(circle-slash) Auto Close: Off';
     }
-    if (decision.outcome === 'keep' && decision.reason === 'empty-window') {
-      return '$(dash) Auto Close: No workspace';
-    }
     if (decision.outcome === 'keep' && decision.reason === 'dirty-editor') {
       return '$(lock) Auto Close: Unsaved';
     }
@@ -150,6 +154,8 @@ export class CleanupScheduler {
         : `Last used: ${formatDuration(decision.idleForMs)} ago`,
       `Threshold: ${config.idleHours}h`,
       `Action: ${config.action}`,
+      `Protect unsaved tabs: ${config.protectDirtyEditors}`,
+      `Hot Exit: ${vscode.workspace.getConfiguration('files').get<string>('hotExit', 'onExit')}`,
       `Check interval: ${config.checkIntervalMinutes}m`,
       `Status: ${status}`,
       this.lastCheck
@@ -204,6 +210,10 @@ export class CleanupScheduler {
       };
     }
   }
+}
+
+export function reasonLabel(reason: string): string {
+  return REASON_LABELS[reason] ?? reason;
 }
 
 export function formatDuration(milliseconds: number): string {

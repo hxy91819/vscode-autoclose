@@ -20,6 +20,7 @@ jobs:
       - run: npm audit
       - run: node --check test/runE2E.mjs
       - run: npm run test:e2e
+      - run: npm run test:installed
   secrets:
     runs-on: ubuntu-latest
     steps:

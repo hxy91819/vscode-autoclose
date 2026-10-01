@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.7
+
+- Add **Show All Windows**, with a live overview of local-profile windows, last activity, predicted cleanup, next checks, and protection reasons. Reports use local files and independent identities for duplicate/empty windows.
+- Include empty windows in idle cleanup using the same focus and activity rules.
+- Default `protectDirtyEditors` to `false`: let VS Code handle unsaved editors through normal Hot Exit/save confirmation. Set it to `true` to preserve the previous behavior. The extension does not change `files.hotExit`.
+- Show unsaved-tab protection and Hot Exit settings in current-window status.
+- Test concurrent window reporting, empty-window cleanup, both unsaved-editor policies, and recovery of unsaved notes after a real Hot Exit close.
+
 ## 0.0.6
 
 - Run exclusively in the local UI extension host so Remote-SSH disconnections do not remove the cleanup command path. Install this version locally and reload existing windows.

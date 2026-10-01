@@ -9,6 +9,11 @@ import { Logger } from './logger';
 import { CleanupScheduler, type SweepOptions } from './scheduler';
 import { WindowCloser } from './windowCloser';
 import { StatusIndicator } from './statusIndicator';
+import path from 'node:path';
+import { WindowRegistry } from './windowRegistry';
+import { WindowOverview } from './windowOverview';
+
+let activeRegistry: WindowRegistry | undefined;
 
 interface QuickTestOptions {
   delayMs?: number;
@@ -32,20 +37,36 @@ export async function activate(
   let previousWindowState = vscode.window.state;
   let interval: ReturnType<typeof setInterval> | undefined;
   let quickTestTimeout: ReturnType<typeof setTimeout> | undefined;
+  let nextCheckAt = Date.now() + readConfig().checkIntervalMs;
+  const registry = new WindowRegistry(
+    path.join(context.globalStorageUri.fsPath, 'windows'),
+  );
+  activeRegistry = registry;
+  const overview = new WindowOverview(
+    registry,
+    scheduler,
+    logger,
+    () => nextCheckAt,
+    closer.canClose(),
+  );
 
   const restartInterval = (): void => {
     if (interval) {
       clearInterval(interval);
     }
 
+    const intervalMs = readConfig().checkIntervalMs;
+    nextCheckAt = Date.now() + intervalMs;
     interval = setInterval(() => {
+      nextCheckAt = Date.now() + intervalMs;
       void scheduler.sweep('interval');
-    }, readConfig().checkIntervalMs);
+    }, intervalMs);
   };
 
   context.subscriptions.push(
     logger,
     scheduler,
+    overview,
     new StatusIndicator(scheduler),
     vscode.window.onDidChangeWindowState((currentState) => {
       if (windowTransitionShowsActivity(previousWindowState, currentState)) {
@@ -60,6 +81,9 @@ export async function activate(
         void scheduler.sweep('configuration changed');
       }
     }),
+    vscode.commands.registerCommand('staleWindowCleaner.showAllWindows', () =>
+      overview.show(),
+    ),
     vscode.commands.registerCommand(
       'staleWindowCleaner.showStatus',
       async () => {
@@ -164,4 +188,7 @@ export async function activate(
   void scheduler.sweep('startup');
 }
 
-export function deactivate(): void {}
+export async function deactivate(): Promise<void> {
+  await activeRegistry?.dispose();
+  activeRegistry = undefined;
+}

@@ -26,7 +26,18 @@ function runConfiguration(label, env = process.env, timeout) {
   });
 }
 
-const integrationResult = runConfiguration('integration');
+let integrationResult = runConfiguration('integration');
+if (!integrationResult.error && integrationResult.status === 0) {
+  const profile = mkdtempSync(path.join(os.tmpdir(), 'autoclose-empty-e2e-'));
+  try {
+    integrationResult = runConfiguration('empty-window', {
+      ...process.env,
+      STALE_WINDOW_CLEANER_EMPTY_DATA_DIR: profile,
+    });
+  } finally {
+    rmSync(profile, { recursive: true, force: true });
+  }
+}
 
 if (integrationResult.error || integrationResult.status !== 0) {
   if (integrationResult.error) {
@@ -47,6 +58,10 @@ if (integrationResult.error || integrationResult.status !== 0) {
       {
         ...process.env,
         STALE_WINDOW_CLEANER_CLOSE_MARKER: markerPath,
+        STALE_WINDOW_CLEANER_CLOSE_PROFILE: path.join(
+          markerDirectory,
+          'profile',
+        ),
       },
       20_000,
     );
