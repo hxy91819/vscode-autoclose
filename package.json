@@ -1,0 +1,115 @@
+{
+  "name": "stale-window-cleaner",
+  "displayName": "Stale Window Cleaner",
+  "description": "Safely detects stale VS Code workspace windows and optionally closes them.",
+  "version": "0.0.6",
+  "publisher": "local-poc",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "staleWindowCleaner.showStatus",
+        "title": "Stale Window Cleaner: Show Status"
+      },
+      {
+        "command": "staleWindowCleaner.resetIdleTimer",
+        "title": "Stale Window Cleaner: Reset Idle Timer"
+      },
+      {
+        "command": "staleWindowCleaner.runCleanupCheck",
+        "title": "Stale Window Cleaner: Run Cleanup Check"
+      },
+      {
+        "command": "staleWindowCleaner.startQuickTest",
+        "title": "Stale Window Cleaner: Start 10-Second Test"
+      }
+    ],
+    "configuration": {
+      "title": "Stale Window Cleaner",
+      "properties": {
+        "staleWindowCleaner.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable stale window checks."
+        },
+        "staleWindowCleaner.idleHours": {
+          "type": "number",
+          "default": 24,
+          "minimum": 0.01,
+          "description": "Hours without window activity before a workspace becomes stale."
+        },
+        "staleWindowCleaner.action": {
+          "type": "string",
+          "enum": [
+            "notify",
+            "close"
+          ],
+          "default": "close",
+          "description": "Notify about a stale window, or close it after all safety checks pass."
+        },
+        "staleWindowCleaner.checkIntervalMinutes": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "description": "How often to check this window."
+        },
+        "staleWindowCleaner.protectDirtyEditors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Never act while any tab has unsaved changes."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run test:unit",
+    "test:unit": "npm run compile && node --test out/test/*.test.js",
+    "test:e2e": "npm run compile && node test/runE2E.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "package": "npx --yes @vscode/vsce@4.0.0 package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.89.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "mocha": "^11.8.0",
+    "prettier": "3.6.2",
+    "typescript": "^5.9.2"
+  },
+  "overrides": {
+    "diff": "^8.0.3",
+    "serialize-javascript": "^7.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hxy91819/vscode-autoclose.git"
+  },
+  "homepage": "https://github.com/hxy91819/vscode-autoclose#readme",
+  "bugs": {
+    "url": "https://github.com/hxy91819/vscode-autoclose/issues"
+  }
+}

@@ -1,0 +1,12 @@
+.gitignore
+.vscode/**
+.vscode-test.*
+src/**
+test/**
+tsconfig.json
+node_modules/**
+out/test/**
+out/**/*.map
+.github/**
+.prettier*
+SECURITY.md
