@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing vX.Y.Z tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate tag and package versions
+        id: metadata
+        run: |
+          VERSION=$(node scripts/validateRelease.mjs)
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm test
+      - run: npm audit
+      - run: npm run test:e2e
+      - name: Package and verify installed VSIX recovery
+        run: npm run test:installed
+      - name: Hash tested VSIX
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: sha256sum "stale-window-cleaner-$VERSION.vsix" > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-vsix
+          path: |
+            stale-window-cleaner-${{ steps.metadata.outputs.version }}.vsix
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-vsix
+      - name: Publish tested VSIX to GitHub Release
+        run: |
+          sha256sum --check SHA256SUMS
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "stale-window-cleaner-$VERSION.vsix" SHA256SUMS --clobber
+          else
+            gh release create "$RELEASE_TAG" "stale-window-cleaner-$VERSION.vsix" SHA256SUMS \
+              --verify-tag --title "$RELEASE_TAG" --generate-notes
+          fi
+      - name: Verify published download
+        run: |
+          gh release download "$RELEASE_TAG" --pattern "stale-window-cleaner-$VERSION.vsix" --dir downloaded
+          cd downloaded
+          sha256sum --check ../SHA256SUMS

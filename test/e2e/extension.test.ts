@@ -43,6 +43,11 @@ suite('Stale Window Cleaner end-to-end', () => {
       'Remote-SSH must not select the remote workspace host for this extension',
     );
     assert.equal(extension.isActive, true);
+    assert.equal(
+      vscode.workspace.getConfiguration('files').get('hotExit'),
+      'onExitAndWindowClose',
+      'auto-close activation should enable window-close backups',
+    );
     assert.ok(commands.includes('staleWindowCleaner.showStatus'));
     assert.ok(commands.includes('staleWindowCleaner.showAllWindows'));
     assert.ok(commands.includes('staleWindowCleaner.resetIdleTimer'));
@@ -62,6 +67,58 @@ suite('Stale Window Cleaner end-to-end', () => {
     );
 
     assert.equal(decision.outcome, 'close');
+  });
+
+  test('enables global Hot Exit on switching to auto-close, but leaves disabled and notify modes alone', async () => {
+    const config = vscode.workspace.getConfiguration('staleWindowCleaner');
+    const files = vscode.workspace.getConfiguration('files');
+    const originalEnabled = config.inspect('enabled')?.globalValue;
+    const originalAction = config.inspect('action')?.globalValue;
+    try {
+      await config.update('enabled', false, vscode.ConfigurationTarget.Global);
+      await files.update('hotExit', 'off', vscode.ConfigurationTarget.Global);
+      await config.update(
+        'action',
+        'notify',
+        vscode.ConfigurationTarget.Global,
+      );
+      assert.equal(
+        vscode.workspace.getConfiguration('files').get('hotExit'),
+        'off',
+      );
+      await config.update('enabled', true, vscode.ConfigurationTarget.Global);
+      assert.equal(
+        vscode.workspace.getConfiguration('files').get('hotExit'),
+        'off',
+      );
+
+      await config.update('action', 'close', vscode.ConfigurationTarget.Global);
+      for (let attempt = 0; attempt < 100; attempt++) {
+        if (
+          vscode.workspace.getConfiguration('files').inspect('hotExit')
+            ?.globalValue === 'onExitAndWindowClose'
+        ) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      assert.equal(
+        vscode.workspace.getConfiguration('files').inspect('hotExit')
+          ?.globalValue,
+        'onExitAndWindowClose',
+      );
+    } finally {
+      await config.update(
+        'enabled',
+        originalEnabled,
+        vscode.ConfigurationTarget.Global,
+      );
+      await config.update(
+        'action',
+        originalAction,
+        vscode.ConfigurationTarget.Global,
+      );
+    }
   });
 
   test('opens all-window overview through its public command', async () => {

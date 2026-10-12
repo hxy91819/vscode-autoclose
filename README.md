@@ -48,9 +48,9 @@ Viewing the overview does not focus the other windows or reset their timers. Est
 
 ## Unsaved editors and Hot Exit
 
-The extension requests a normal VS Code window close. VS Code decides whether to restore unsaved editors through Hot Exit or show a save/confirmation dialog. Backup is not the same as saving files to disk.
+The extension requests a normal VS Code window close. When enabled with the `close` action, it automatically sets `files.hotExit` to `onExitAndWindowClose` in local user settings at activation and when cleanup settings change. It checks this setting again before each close, so workspace windows can back up unsaved editors without a save prompt. Backup is not the same as saving files to disk. The setting remains enabled after disabling or uninstalling the extension. If updating the setting fails, the close attempt is reported as failed.
 
-For workspace windows, you can enable window-close backups in your **local user settings**:
+The resulting **local user settings** are:
 
 ```json
 {
@@ -59,7 +59,7 @@ For workspace windows, you can enable window-close backups in your **local user 
 }
 ```
 
-On macOS, the default `files.hotExit: "onExit"` does not generally suppress confirmation for closing an individual window. Empty windows can still prompt for unsaved notes even with `onExitAndWindowClose`. The extension does not change your Hot Exit setting or bypass native confirmations. To keep every window with unsaved tabs open, set `protectDirtyEditors` to `true`.
+On macOS, the default `files.hotExit: "onExit"` does not generally suppress confirmation for closing an individual window. Empty windows can still prompt for unsaved notes even with `onExitAndWindowClose`. The extension enables window-close Hot Exit backups but does not bypass native confirmations, including terminal-process prompts. To keep every window with unsaved tabs open, set `protectDirtyEditors` to `true`.
 
 ## Verify and troubleshoot
 
@@ -95,6 +95,19 @@ Unit tests cover idle persistence and cleanup decisions. Integration tests use a
 
 CI runs formatting, compilation, tests, dependency audit, and secret scanning. Dependabot maintains npm and GitHub Actions dependencies. Report reproducible problems in [Issues](https://github.com/hxy91819/vscode-autoclose/issues), including the extension version, local/SSH context, settings, and relevant redacted output. See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
+## Release automation
+
+Pushing a `vX.Y.Z` tag publishes a GitHub Release with the tested VSIX and `SHA256SUMS`. The tag must match the versions in `package.json` and `package-lock.json`, and have a corresponding `CHANGELOG.md` section. The workflow runs the repository checks and installed-extension recovery test, then uploads the same tested package. The published download is checked against its checksum. It uses GitHub's built-in token; no extra release secret is required.
+
+For the next release, update both package versions and the changelog, commit and push to `master`, then create and push the matching tag:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+To retry an existing tag, run the **Release** workflow from GitHub Actions with that tag. Reruns replace the release attachments after testing. Publishing to the VS Code Marketplace or Open VSX is not configured.
+
 ## 中文说明
 
 这是一个按闲置时间清理 VS Code 工作区窗口的扩展。默认闲置 **24 小时**后关闭，每 **30 分钟**检查一次；正在使用或尚未达到阈值的窗口会保留，空窗口也参与清理。0.0.7 默认允许未保存标签页进入 VS Code 正常关闭流程，由 VS Code 备份或提示保存。
@@ -105,4 +118,4 @@ CI runs formatting, compilation, tests, dependency audit, and secret scanning. D
 
 快速验证：在所有文件已保存的测试窗口运行 **Stale Window Cleaner: Start 10-Second Test**，立即切换到其他窗口。默认配置下，测试窗口应在 10 秒后关闭。希望只观察时，将 `staleWindowCleaner.action` 设置为 `notify`。
 
-需要保留所有未保存内容窗口时，将 `staleWindowCleaner.protectDirtyEditors` 设为 `true`。希望工作区关闭时使用 Hot Exit，可在本地用户设置中将 `files.hotExit` 设为 `onExitAndWindowClose`。macOS 空窗口里的未保存临时内容仍可能要求确认；插件使用正常关闭命令，不跳过保存或终端提示。当前尚未实现任务/调试会话保护、工作区排除和关闭宽限期。
+需要保留所有未保存内容窗口时，将 `staleWindowCleaner.protectDirtyEditors` 设为 `true`。启用插件且使用 `close` 模式时，插件会自动将本地用户设置 `files.hotExit` 设为 `onExitAndWindowClose`，并在每次关闭前再次检查，使工作区中的未保存内容备份后关闭。禁用或卸载插件后，这项设置会保留；备份不会写入原文件。macOS 空窗口里的未保存临时内容仍可能要求确认；插件使用正常关闭命令，不跳过保存或终端提示。当前尚未实现任务/调试会话保护、工作区排除和关闭宽限期。

@@ -2,6 +2,17 @@ import * as vscode from 'vscode';
 
 export type CleanupAction = 'notify' | 'close';
 
+export async function enableWindowCloseBackups(): Promise<void> {
+  const files = vscode.workspace.getConfiguration('files');
+  if (files.get<string>('hotExit') !== 'onExitAndWindowClose') {
+    await files.update(
+      'hotExit',
+      'onExitAndWindowClose',
+      vscode.ConfigurationTarget.Global,
+    );
+  }
+}
+
 export interface CleanerConfig {
   enabled: boolean;
   idleMs: number;

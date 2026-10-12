@@ -10,3 +10,4 @@ out/**/*.map
 .github/**
 .prettier*
 SECURITY.md
+scripts/**

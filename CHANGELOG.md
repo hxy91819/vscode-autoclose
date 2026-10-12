@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.8
+
+- Automatically build, test, and publish VSIX downloads and SHA-256 checksums to GitHub Releases on `vX.Y.Z` tags, with manual reruns for existing tags.
+
+- Automatically enable local `files.hotExit: "onExitAndWindowClose"` when auto-close is enabled and before closing, allowing workspace windows to back up unsaved editors without a save prompt. The setting persists after disabling or uninstalling the extension; empty-window and terminal confirmations can still occur.
+- Verify automatic Hot Exit configuration and installed-extension recovery starting with Hot Exit disabled.
+
 ## 0.0.7
 
 - Add **Show All Windows**, with a live overview of local-profile windows, last activity, predicted cleanup, next checks, and protection reasons. Reports use local files and independent identities for duplicate/empty windows.

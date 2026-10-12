@@ -4,7 +4,7 @@ import {
   windowTransitionShowsActivity,
 } from './activityTracker';
 import { systemClock } from './clock';
-import { readConfig } from './config';
+import { enableWindowCloseBackups, readConfig } from './config';
 import { Logger } from './logger';
 import { CleanupScheduler, type SweepOptions } from './scheduler';
 import { WindowCloser } from './windowCloser';
@@ -25,6 +25,19 @@ export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
   const logger = new Logger();
+  const prepareAutoClose = async (): Promise<void> => {
+    const config = readConfig();
+    if (config.enabled && config.action === 'close') {
+      try {
+        await enableWindowCloseBackups();
+      } catch (error) {
+        logger.warn(
+          `could not enable Hot Exit: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  };
+  await prepareAutoClose();
   const tracker = new ActivityTracker(context.workspaceState, systemClock);
   await tracker.initialize();
 
@@ -74,10 +87,11 @@ export async function activate(
       }
       previousWindowState = currentState;
     }),
-    vscode.workspace.onDidChangeConfiguration((event) => {
+    vscode.workspace.onDidChangeConfiguration(async (event) => {
       if (event.affectsConfiguration('staleWindowCleaner')) {
         restartInterval();
         scheduler.activityRecorded();
+        await prepareAutoClose();
         void scheduler.sweep('configuration changed');
       }
     }),

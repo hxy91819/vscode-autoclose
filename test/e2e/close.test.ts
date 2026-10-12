@@ -21,13 +21,10 @@ suite('Stale Window Cleaner close smoke', () => {
       commands.includes(CLOSE_COMMAND),
       'the close smoke command should exist only in ExtensionMode.Test',
     );
+    // Start with Hot Exit disabled: the close path must enable backups itself.
     await vscode.workspace
       .getConfiguration('files')
-      .update(
-        'hotExit',
-        'onExitAndWindowClose',
-        vscode.ConfigurationTarget.Global,
-      );
+      .update('hotExit', 'off', vscode.ConfigurationTarget.Global);
     const document = await vscode.workspace.openTextDocument({
       content: 'autoclose hot exit recovery test',
     });

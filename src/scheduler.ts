@@ -6,7 +6,11 @@ import {
   type CleanupDecision,
   type CleanupSnapshot,
 } from './cleanupDecision';
-import { readConfig, type CleanupAction } from './config';
+import {
+  enableWindowCloseBackups,
+  readConfig,
+  type CleanupAction,
+} from './config';
 import type { Logger } from './logger';
 import type { WindowCloser } from './windowCloser';
 import { getWorkspaceIdentity } from './workspaceIdentity';
@@ -179,7 +183,7 @@ export class CleanupScheduler {
   private async closeIfStillSafe(
     options: SweepOptions,
   ): Promise<CleanupDecision> {
-    const latestDecision = this.inspect(options);
+    let latestDecision = this.inspect(options);
     if (latestDecision.outcome !== 'close') {
       this.logger.info(
         `close cancelled after final safety check: ${describeDecision(latestDecision)}`,
@@ -188,6 +192,16 @@ export class CleanupScheduler {
     }
 
     try {
+      if (this.closer.canClose()) {
+        await enableWindowCloseBackups();
+      }
+      latestDecision = this.inspect(options);
+      if (latestDecision.outcome !== 'close') {
+        this.logger.info(
+          `close cancelled after Hot Exit preparation: ${describeDecision(latestDecision)}`,
+        );
+        return latestDecision;
+      }
       if (!(await this.closer.close())) {
         this.logger.warn(
           'close skipped because the VS Code close command is unavailable',

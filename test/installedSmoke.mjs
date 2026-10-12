@@ -33,7 +33,7 @@ await mkdir(workspace);
 await writeFile(
   path.join(profile, 'User/settings.json'),
   JSON.stringify({
-    'files.hotExit': 'onExitAndWindowClose',
+    'files.hotExit': 'off',
     'security.workspace.trust.enabled': false,
     'update.mode': 'none',
     'workbench.startupEditor': 'none',
