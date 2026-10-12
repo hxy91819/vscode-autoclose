@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import * as vscode from 'vscode';
 
-const EXTENSION_ID = 'local-poc.stale-window-cleaner';
+const EXTENSION_ID = 'MasonHuang.stale-window-cleaner';
 const CLOSE_COMMAND = 'staleWindowCleaner.e2e.closeWindow';
 
 suite('Stale Window Cleaner close smoke', () => {

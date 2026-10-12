@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.9
+
+- Add VS Code Marketplace publication of the tested release VSIX using the existing `MasonHuang` publisher and repository `VSCE_PAT` secret.
+- Change the extension ID to `MasonHuang.stale-window-cleaner`. Uninstall the old `local-poc.stale-window-cleaner` extension before installing this version; settings persist, but idle timers and window reports start fresh.
+
 ## 0.0.8
 
 - Automatically build, test, and publish VSIX downloads and SHA-256 checksums to GitHub Releases on `vX.Y.Z` tags, with manual reruns for existing tags.

@@ -12,7 +12,7 @@ Requires desktop VS Code 1.89 or later.
 2. In your **local** VS Code window, run **Extensions: Install from VSIX…** and select the file. For Remote-SSH, install locally rather than on the SSH host.
 3. Reload existing windows. The status bar shows **Auto Close**; click it for details.
 
-The extension ID remains `local-poc.stale-window-cleaner` for compatibility with existing installations. This project is distributed as a VSIX; it is not currently published on the VS Code Marketplace.
+Starting with 0.0.9, the Marketplace extension ID is `MasonHuang.stale-window-cleaner`. Before upgrading from the old `local-poc.stale-window-cleaner` VSIX, uninstall the old extension to avoid running both copies. Existing `staleWindowCleaner.*` settings remain; idle timers and window reports start fresh because VS Code stores extension state by ID. Marketplace publication requires the repository `VSCE_PAT` secret; until the first publication completes, install the VSIX from Releases.
 
 **Upgrading from 0.0.5:** that version ran on the SSH host and could not clean up a disconnected window. Install the latest version locally and reload. The local extension host uses its own workspace storage, so the idle timer may start fresh after migration.
 
@@ -106,9 +106,11 @@ git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-To retry an existing tag, run the **Release** workflow from GitHub Actions with that tag. Reruns replace the release attachments after testing. Publishing to the VS Code Marketplace or Open VSX is not configured.
+To retry an existing tag, run the **Release** workflow from GitHub Actions with that tag. Reruns replace the release attachments after testing. For 0.0.9 and later, the workflow also publishes the same tested VSIX to the VS Code Marketplace under `MasonHuang.stale-window-cleaner`. Configure a valid Marketplace publishing token as the repository Actions secret `VSCE_PAT` before tagging the first Marketplace release. The existing `clihub` token can be reused if it is still valid and grants access to the publisher; GitHub cannot reveal an existing secret, so supply its original value or create a new token under the same Microsoft account. Missing or invalid credentials fail the Marketplace job; GitHub Release publication runs independently. Marketplace reruns skip versions already published. Open VSX publication is not configured.
 
 ## 中文说明
+
+0.0.9 起市场发布者使用已有的 `MasonHuang`，插件 ID 为 `MasonHuang.stale-window-cleaner`。从旧版 VSIX 升级前请卸载 `local-poc.stale-window-cleaner`，避免同时运行两份插件；原有设置保留，闲置计时会重新开始。首次市场发布完成前仍可从 GitHub Releases 安装 VSIX。
 
 这是一个按闲置时间清理 VS Code 工作区窗口的扩展。默认闲置 **24 小时**后关闭，每 **30 分钟**检查一次；正在使用或尚未达到阈值的窗口会保留，空窗口也参与清理。0.0.7 默认允许未保存标签页进入 VS Code 正常关闭流程，由 VS Code 备份或提示保存。
 

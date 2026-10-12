@@ -10,7 +10,7 @@ import { StatusIndicator } from '../../src/statusIndicator';
 import { windowEstimate } from '../../src/windowOverview';
 import type { WindowReport } from '../../src/windowRegistry';
 
-const EXTENSION_ID = 'local-poc.stale-window-cleaner';
+const EXTENSION_ID = 'MasonHuang.stale-window-cleaner';
 const RUN_CHECK_COMMAND = 'staleWindowCleaner.runCleanupCheck';
 const QUICK_TEST_COMMAND = 'staleWindowCleaner.startQuickTest';
 

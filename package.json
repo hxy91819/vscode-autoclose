@@ -2,8 +2,8 @@
   "name": "stale-window-cleaner",
   "displayName": "Stale Window Cleaner",
   "description": "Safely detects stale VS Code workspace windows and optionally closes them.",
-  "version": "0.0.8",
-  "publisher": "local-poc",
+  "version": "0.0.9",
+  "publisher": "MasonHuang",
   "license": "MIT",
   "engines": {
     "vscode": "^1.89.0"

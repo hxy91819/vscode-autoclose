@@ -91,3 +91,37 @@ jobs:
           gh release download "$RELEASE_TAG" --pattern "stale-window-cleaner-$VERSION.vsix" --dir downloaded
           cd downloaded
           sha256sum --check ../SHA256SUMS
+
+  publish-marketplace:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-vsix
+      - name: Verify Marketplace package
+        run: |
+          sha256sum --check SHA256SUMS
+          python3 - <<'PY'
+          import json, os, zipfile
+          with zipfile.ZipFile(f"stale-window-cleaner-{os.environ['VERSION']}.vsix") as package:
+              manifest = json.loads(package.read('extension/package.json'))
+          assert manifest['publisher'] == 'MasonHuang', 'This legacy release is GitHub-only; Marketplace releases start at 0.0.9'
+          assert manifest['name'] == 'stale-window-cleaner'
+          assert manifest['version'] == os.environ['VERSION']
+          PY
+      - name: Publish tested VSIX to VS Code Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo '::error::Configure the VSCE_PAT repository secret with a valid token for the MasonHuang publisher.'
+            exit 1
+          fi
+          npx --yes @vscode/vsce@4.0.0 publish --packagePath "stale-window-cleaner-$VERSION.vsix" --skip-duplicate

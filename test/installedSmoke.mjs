@@ -197,7 +197,7 @@ x.XSetInputFocus(d,w,2,0);x.XFlush(d);time.sleep(20)`,
       if (
         file.endsWith('Stale Window Cleaner.log') ||
         (file.endsWith('.json') &&
-          file.includes('local-poc.stale-window-cleaner/windows'))
+          file.includes('MasonHuang.stale-window-cleaner/windows'))
       ) {
         console.log(file, await readFile(path.join(profile, file), 'utf8'));
       }
