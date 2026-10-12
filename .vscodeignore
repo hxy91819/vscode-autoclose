@@ -11,3 +11,4 @@ out/**/*.map
 .prettier*
 SECURITY.md
 scripts/**
+assets/icon-prompt.txt

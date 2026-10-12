@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.10
+
+- Add a window-and-clock icon to the VS Code extension listing and Marketplace page.
+
 ## 0.0.9
 
 - Add VS Code Marketplace publication of the tested release VSIX using the existing `MasonHuang` publisher and repository `VSCE_PAT` secret.
